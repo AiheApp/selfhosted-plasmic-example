@@ -13,7 +13,7 @@ if (typeof window === "undefined" && (!projectId || !token)) {
 
 export const PLASMIC = initPlasmicLoader({
   nextNavigation: NextNavigation,
-  projects: [{ id: projectId, token }],
+  projects: [{ id: projectId ?? "", token: token ?? "" }],
   host,
   preview: process.env.PLASMIC_PREVIEW === "true",
 });
