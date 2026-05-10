@@ -1,23 +1,14 @@
-import { PLASMIC } from "@/plasmic-init";
+import { getPlasmicLoader } from "@/plasmic-init";
 import { PlasmicClientRootProvider } from "@/plasmic-init-client";
 import { PlasmicComponent } from "@plasmicapp/loader-nextjs";
 import { Metadata, ResolvingMetadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
-export const revalidate = 60;
-export const dynamicParams = true;
+export const dynamic = "force-dynamic";
 
 interface Params {
   catchall: string[] | undefined;
-}
-
-export async function generateStaticParams(): Promise<Params[]> {
-  const pageModules = await PLASMIC.fetchPages();
-  return pageModules.map((mod) => {
-    const catchall =
-      mod.path === "/" ? undefined : mod.path.substring(1).split("/");
-    return { catchall };
-  });
 }
 
 interface LoaderPageProps {
@@ -25,11 +16,18 @@ interface LoaderPageProps {
   searchParams?: Record<string, string | string[]>;
 }
 
+function getSlug(): string {
+  const slug = headers().get("x-plasmic-slug");
+  if (!slug) notFound();
+  return slug;
+}
+
 export async function generateMetadata(
   { params }: LoaderPageProps,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const { pageMeta } = await fetchData(params.catchall);
+  const slug = getSlug();
+  const { pageMeta } = await fetchData(slug, params.catchall);
   return {
     ...((await parent) as Metadata),
     ...pageMeta.pageMetadata,
@@ -40,9 +38,11 @@ export default async function PlasmicLoaderPage({
   params,
   searchParams,
 }: LoaderPageProps) {
-  const { pageMeta, prefetchedData } = await fetchData(params.catchall);
+  const slug = getSlug();
+  const { pageMeta, prefetchedData } = await fetchData(slug, params.catchall);
   return (
     <PlasmicClientRootProvider
+      slug={slug}
       prefetchedData={prefetchedData}
       pageParams={pageMeta.params}
       pageQuery={searchParams}
@@ -52,9 +52,11 @@ export default async function PlasmicLoaderPage({
   );
 }
 
-async function fetchData(catchall: string[] | undefined) {
+async function fetchData(slug: string, catchall: string[] | undefined) {
+  const loader = getPlasmicLoader(slug);
+  if (!loader) notFound();
   const plasmicPath = catchall ? `/${catchall.join("/")}` : "/";
-  const prefetchedData = await PLASMIC.maybeFetchComponentData(plasmicPath);
+  const prefetchedData = await loader.maybeFetchComponentData(plasmicPath);
   if (!prefetchedData || prefetchedData.entryCompMetas.length === 0) {
     notFound();
   }

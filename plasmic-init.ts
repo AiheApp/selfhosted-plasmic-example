@@ -1,19 +1,48 @@
 import { initPlasmicLoader } from "@plasmicapp/loader-nextjs/react-server-conditional";
 import * as NextNavigation from "next/navigation";
 
-const projectId = process.env.PLASMIC_PROJECT_ID;
-const token = process.env.PLASMIC_PROJECT_TOKEN;
+type ProjectCfg = { id: string; token: string };
+type PlasmicLoader = ReturnType<typeof initPlasmicLoader>;
+
+function readProjectsMap(): Record<string, ProjectCfg> {
+  const raw = process.env.PLASMIC_PROJECTS;
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    if (typeof window === "undefined") {
+      console.error("Invalid PLASMIC_PROJECTS JSON:", e);
+    }
+    return {};
+  }
+}
+
+const PROJECTS = readProjectsMap();
 const host = process.env.PLASMIC_HOST;
+const loaderCache = new Map<string, PlasmicLoader>();
 
-if (typeof window === "undefined" && (!projectId || !token)) {
-    throw new Error(                                                                                                                               
-      "Missing PLASMIC_PROJECT_ID or PLASMIC_PROJECT_TOKEN env vars. Set them in Coolify before building."
-    );                                                                                                                                             
-} 
+if (typeof window === "undefined" && Object.keys(PROJECTS).length === 0) {
+  console.warn(
+    "PLASMIC_PROJECTS is empty — set it to a JSON object mapping subdomain slugs to {id, token}."
+  );
+}
 
-export const PLASMIC = initPlasmicLoader({
-  nextNavigation: NextNavigation,
-  projects: [{ id: projectId ?? "", token: token ?? "" }],
-  host,
-  preview: process.env.PLASMIC_PREVIEW === "true",
-});
+export function getPlasmicLoader(slug: string): PlasmicLoader | null {
+  const cfg = PROJECTS[slug];
+  if (!cfg) return null;
+  let loader = loaderCache.get(slug);
+  if (!loader) {
+    loader = initPlasmicLoader({
+      nextNavigation: NextNavigation,
+      projects: [cfg],
+      host,
+      preview: process.env.PLASMIC_PREVIEW === "true",
+    });
+    loaderCache.set(slug, loader);
+  }
+  return loader;
+}
+
+export function listProjectSlugs(): string[] {
+  return Object.keys(PROJECTS);
+}

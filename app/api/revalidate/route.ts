@@ -17,8 +17,13 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  revalidatePath("/", "layout");
-  return NextResponse.json({ ok: true, revalidatedAt: Date.now() });
+  const path = req.nextUrl.searchParams.get("path");
+  if (path) {
+    revalidatePath(path);
+  } else {
+    revalidatePath("/", "layout");
+  }
+  return NextResponse.json({ ok: true, path: path ?? "*", revalidatedAt: Date.now() });
 }
 
 export async function GET(req: NextRequest) {
