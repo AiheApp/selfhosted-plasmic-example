@@ -29,12 +29,13 @@ if (typeof window === "undefined" && Object.keys(PROJECTS).length === 0) {
 
 export function getPlasmicLoader(slug: string): PlasmicLoader | null {
   const cfg = PROJECTS[slug];
-  if (!cfg) return null;
+  if (typeof window === "undefined" && !cfg) return null;
+  const resolvedCfg = cfg ?? { id: "", token: "" };
   let loader = loaderCache.get(slug);
   if (!loader) {
     loader = initPlasmicLoader({
       nextNavigation: NextNavigation,
-      projects: [cfg],
+      projects: [resolvedCfg],
       host,
       preview: process.env.PLASMIC_PREVIEW === "true",
     });
