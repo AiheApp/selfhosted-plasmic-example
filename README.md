@@ -184,9 +184,9 @@ to the Coolify Domains list.
 
 - **404 on a subdomain** → slug not in the store. Hit the register endpoint
   for that slug, or check `/data/projects.json` in the container.
-- **`projects.json` not persisting** → the persistent volume isn't mounted,
-  or the `nextjs` user (uid 1001) can't write to `/data`. In Coolify, the
-  mount must be writable by the container user.
+- **`projects.json` not persisting** → the persistent volume isn't mounted
+  at `/data`. The container entrypoint auto-chowns the mount on startup, so
+  permissions shouldn't be an issue; double-check the mount path in Coolify.
 - **`/api/projects/register` returns 401** → `REVALIDATE_SECRET` mismatch.
 - **`/api/projects/register` returns 400** → check the slug format
   (alphanumeric + hyphens, 1–63 chars) and that all three params are present.
