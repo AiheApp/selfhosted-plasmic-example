@@ -15,9 +15,15 @@ function readServerProjects(): Record<string, ProjectCfg> {
   return getProjects();
 }
 
+function legacyConfig(): ProjectCfg | null {
+  const id = process.env.PLASMIC_PROJECT_ID;
+  const token = process.env.PLASMIC_PROJECT_TOKEN;
+  return id && token ? { id, token } : null;
+}
+
 export function getPlasmicLoader(slug: string): PlasmicLoader | null {
   const projects = readServerProjects();
-  const cfg = projects[slug];
+  const cfg = projects[slug] ?? legacyConfig();
 
   // On the server, an unknown slug is a 404 signal to callers.
   if (typeof window === "undefined" && !cfg) return null;
