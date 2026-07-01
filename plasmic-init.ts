@@ -45,7 +45,7 @@ export function getPlasmicLoader(slug: string): PlasmicLoader | null {
     nextNavigation: NextNavigation,
     projects: [resolvedCfg],
     host,
-    preview: process.env.PLASMIC_PREVIEW === "true",
+    preview: process.env.PLASMIC_PREVIEW !== "false",
   });
   loaderCache.set(slug, { cfg: resolvedCfg, loader });
   return loader;
